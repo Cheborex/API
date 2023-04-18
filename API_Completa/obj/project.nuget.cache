@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "9mr5gZM0DHnd7b6rFOxpYz5vkxLXBpIXptLj7BSRl5EGz9I8zZe4bnpqKcjWHrAcu6b2jqFf1lxGggvtnmh01A==",
+  "dgSpecHash": "sUiGKpXwvX5478o5PVvJ4rkDUapK3dI5oFOIbD1e8iHHe8ZQuiSvdMhP2imiKUEke/tAvQWJKtdtYk8uB3Ehfg==",
   "success": true,
   "projectFilePath": "C:\\Users\\jtoma\\Desktop\\API\\API_Completa\\API_Completa.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\jtoma\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
+    "C:\\Users\\jtoma\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",
     "C:\\Users\\jtoma\\.nuget\\packages\\azure.core\\1.24.0\\azure.core.1.24.0.nupkg.sha512",
     "C:\\Users\\jtoma\\.nuget\\packages\\azure.identity\\1.6.0\\azure.identity.1.6.0.nupkg.sha512",
     "C:\\Users\\jtoma\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

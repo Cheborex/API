@@ -1,11 +1,10 @@
 ﻿using API_Completa.Datos;
 using API_Completa.Modelos;
 using API_Completa.Modelos.Dto;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.CodeAnalysis;
 
 namespace API_Completa.Controllers
 {
@@ -13,16 +12,18 @@ namespace API_Completa.Controllers
     [ApiController]
     public class ApiController : ControllerBase
     {
-        // Login integrado en ASP.NET 
+        // Inyeccion de dependencias. Se deben agregar todas al constructor(ctor). Se deben agregar previamente a Program.cs
 
         private readonly ILogger<ApiController> _logger;
         private readonly AplicationDbContext _db;
+        private readonly IMapper _mapper;
 
 
-        public ApiController(ILogger<ApiController> logger, AplicationDbContext db)
+        public ApiController(ILogger<ApiController> logger, AplicationDbContext db, IMapper mapper)
         {
             _logger = logger;
             _db = db;
+            _mapper = mapper;
         }
 
 
@@ -31,11 +32,12 @@ namespace API_Completa.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<ApiDto>> GetApis()
+        public async Task<ActionResult<IEnumerable<ApiDto>>> GetApis()
         {
             _logger.LogInformation("Obtener datos de una api");
-            //return Ok(ApiDatos.apiList); // esa es para traer los datos falsos
-            return Ok(_db.Apis.ToList());
+
+            IEnumerable<Api> apiList = await _db.Apis.ToListAsync();
+            return Ok(_mapper.Map<IEnumerable<ApiDto>>(apiList));
         }
 
         // Api de tipo get que pide un parametro
@@ -44,7 +46,7 @@ namespace API_Completa.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)] // Documentar Status
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<ApiDto> GetApi(int id)
+        public async Task<ActionResult<ApiDto>> GetApi(int id)
         {
             if (id == 0)
             {
@@ -53,74 +55,61 @@ namespace API_Completa.Controllers
             }
 
             // var api = ApiDatos.apiList.FirstOrDefault(a => a.Id == id);
-            var api = _db.Apis.FirstOrDefault(a => a.Id == id); // filtrar datos por id
+            var api = await _db.Apis.FirstOrDefaultAsync(a => a.Id == id); // filtrar datos por id
 
             if (api == null)
             {
                 return NotFound();
             }
 
-            return Ok(api);
+            return Ok(_mapper.Map<ApiDto>(api));
         }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public ActionResult<ApiDto> PostApi([FromBody] ApiDto apiDto)
+        public async Task<ActionResult<ApiDto>> PostApi([FromBody] ApiCreateDto apiCreateDto)
         {
             if (!ModelState.IsValid) // Para validar que los campos esten como corresponden
             {
                 return BadRequest(ModelState);
             }
 
-            if (_db.Apis.FirstOrDefault(a => a.Nombre.ToLower() == apiDto.Nombre.ToLower()) != null) // Validacion personalizada
+            if (await _db.Apis.FirstOrDefaultAsync(a => a.Nombre.ToLower() == apiCreateDto.Nombre.ToLower()) != null) // Validacion personalizada
             {
                 ModelState.AddModelError("NombreExiste", "El usuario con ese Nombre ya existe!");
                 return BadRequest(ModelState);
             }
 
-            if (apiDto == null)
+            if (apiCreateDto == null)
             {
-                return BadRequest(apiDto);
-            }
-            if (apiDto.Id > 0)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return BadRequest(apiCreateDto);
             }
 
-            Api modelo = new()
-            {
-                Nombre = apiDto.Nombre,
-                Detalle = apiDto.Detalle,
-                ImagenUrl = apiDto.ImagenUrl,
-                Ocupantes = apiDto.Ocupantes,
-                Tarifa = apiDto.Tarifa,
-                MetrosCuadrados = apiDto.MetrosCuadrados,
-                Amenidad = apiDto.Amenidad
-            };
+            Api modelo = _mapper.Map<Api>(apiCreateDto);
 
-            _db.Apis.Add(modelo);
-            _db.SaveChanges();
+            await _db.Apis.AddAsync(modelo);
+            await _db.SaveChangesAsync();
 
-            return CreatedAtRoute("GetApi", new { id = apiDto.Id }, apiDto);
+            return CreatedAtRoute("GetApi", new { id = modelo.Id }, modelo);
         }
 
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult EliminarApi(int id)
+        public async Task<IActionResult> EliminarApi(int id)
         {
             if (id == 0)
             {
                 return BadRequest();
             }
-            var idYaCreado = _db.Apis.FirstOrDefault(a => a.Id == id);
+            var idYaCreado = await _db.Apis.FirstOrDefaultAsync(a => a.Id == id);
             if (idYaCreado == null)
             {
                 return NotFound();
             }
-            _db.Apis.Remove(idYaCreado);
-            _db.SaveChanges();
+            _db.Apis.Remove(idYaCreado); //el metodo Remove es siempre sincrono
+            await _db.SaveChangesAsync();
 
             return NoContent();
         }
@@ -128,26 +117,17 @@ namespace API_Completa.Controllers
         [HttpPut("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult UpdateApi(int id, [FromBody] ApiDto apiDto)
+        public async Task<IActionResult> UpdateApi(int id, [FromBody] ApiUpdateDto apiUpdateDto)
         {
-            if (apiDto == null || id != apiDto.Id)
+            if (apiUpdateDto == null || id != apiUpdateDto.Id)
             {
                 return BadRequest();
             }
-            Api modelo = new()
-            {
-                Id = apiDto.Id,
-                Nombre = apiDto.Nombre,
-                Detalle = apiDto.Detalle,
-                ImagenUrl = apiDto.ImagenUrl,
-                Ocupantes = apiDto.Ocupantes,
-                Tarifa = apiDto.Tarifa,
-                MetrosCuadrados = apiDto.MetrosCuadrados,
-                Amenidad = apiDto.Amenidad
-            };
 
-            _db.Apis.Update(modelo);
-            _db.SaveChanges();
+            Api modelo = _mapper.Map<Api>(apiUpdateDto);
+
+            _db.Apis.Update(modelo); // El metodo Update es siempre sincrono
+            await _db.SaveChangesAsync();
 
             return NoContent();
         }
@@ -156,51 +136,32 @@ namespace API_Completa.Controllers
         [HttpPatch("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult PatchApi(int id, JsonPatchDocument<ApiDto> patchDto)
+        public async Task<IActionResult> PatchApi(int id, JsonPatchDocument<ApiUpdateDto> patchDto)
         {
             if (patchDto == null || id == 0)
             {
                 return BadRequest();
             }
-            var idYaCreado = _db.Apis.AsNoTracking().FirstOrDefault(a => a.Id == id);
+            var idYaCreado = await _db.Apis.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
 
-            ApiDto apiDto = new()
-            {
-                Id = idYaCreado.Id,
-                Nombre = idYaCreado.Nombre,
-                Detalle= idYaCreado.Detalle,
-                ImagenUrl = idYaCreado.ImagenUrl,
-                Ocupantes= idYaCreado.Ocupantes,
-                Tarifa= idYaCreado.Tarifa,
-                MetrosCuadrados = idYaCreado.MetrosCuadrados,
-                Amenidad = idYaCreado.Amenidad
-            };
+            ApiUpdateDto apiDto = _mapper.Map<ApiUpdateDto>(idYaCreado);
 
-            if(idYaCreado == null)
+            if (idYaCreado == null)
             {
                 return BadRequest();
             }
 
             patchDto.ApplyTo(apiDto, ModelState);
 
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                return(BadRequest(ModelState));
+                return (BadRequest(ModelState));
             }
 
-            Api Modelo = new()
-            {
-                Id = apiDto.Id,
-                Nombre = apiDto.Nombre,
-                Detalle = apiDto.Detalle,
-                ImagenUrl = apiDto.ImagenUrl,
-                Ocupantes = apiDto.Ocupantes,
-                Tarifa = apiDto.Tarifa,
-                MetrosCuadrados = apiDto.MetrosCuadrados,
-                Amenidad = apiDto.Amenidad
-            };
-            _db.Apis.Update(Modelo);
-            _db.SaveChanges();
+            Api modelo = _mapper.Map<Api>(apiDto);
+
+            _db.Apis.Update(modelo);
+            await _db.SaveChangesAsync();
 
             return NoContent();
         }

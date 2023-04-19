@@ -1,5 +1,7 @@
 using API_Completa;
 using API_Completa.Datos;
+using API_Completa.Repositorio;
+using API_Completa.Repositorio.IRepositorio;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +20,10 @@ builder.Services.AddDbContext<AplicationDbContext>(option => {
 
 // Crear el servicio de AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingConfig));
+
+
+builder.Services.AddScoped<IApiRepositorio, ApiRepositorio>();
+builder.Services.AddScoped<INumeroApiRepositorio, NumeroApiRepositorio>();
 
 var app = builder.Build();
 

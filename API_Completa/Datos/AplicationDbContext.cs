@@ -10,6 +10,7 @@ namespace API_Completa.Datos
 
         }        
         public DbSet<Api> Apis { get; set; }
+        public DbSet<NumeroApi> NumeroApis { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

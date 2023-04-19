@@ -14,6 +14,10 @@ namespace API_Completa
 
             CreateMap<Api, ApiCreateDto>().ReverseMap();
             CreateMap<Api, ApiUpdateDto>().ReverseMap();
+
+            CreateMap<NumeroApi, NumeroApiDto>().ReverseMap();
+            CreateMap<NumeroApi, NumeroApiCreateDto>().ReverseMap();
+            CreateMap<NumeroApi, NumeroApiUpdateDto>().ReverseMap();
         }
         
     }
